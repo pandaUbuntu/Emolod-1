@@ -174,12 +174,7 @@ public:
 	void setEndurance(int endurance) {
 		this->endurance = endurance;
 	}
-	void setExperience(int experience) {
-		this->experience = experience;
-	}
-	void setExperienceMax(int experienceMax) {
-		this->experienceMax = experienceMax;
-	}
+
 	void setCash(int money) {
 		this->cash = money;
 	}
@@ -219,9 +214,7 @@ public:
 		int damage = weapon->getDamage() + strength;
 		int critChance = (agility + level)/3;
 
-
-
-		if ((1 + rand() % agility)<critChance) {
+		if (( rand() % agility)<=critChance) {
 			damage += agility;
 		}
 
@@ -230,9 +223,7 @@ public:
 
 	int generateDefence(int damage) {
 		
-		return damage - (endurance + armor->getDefence()) / 3;
-		
-		
+		return damage - (endurance + armor->getDefence()) / 3;	
 	}
 };
 
@@ -424,10 +415,6 @@ public:
 		if (answer == "yes") {
 			buyItem();
 		}
-
-
-
-
 	}
 	void meetMonster() {
 		Monster* monster = this->engine->createMonster(this->player->getLevel());
@@ -476,12 +463,6 @@ int main() {
 	}
 
 	player = engine->createPlayer(name, category);
-	Weapon* weapon = new Weapon(name, 10, 10);
-	Monster* monster = engine->createMonster(player->getLevel());
-	for (int i = 0; i < 100; i++)
-	{
-		cout << player->generateDamage() << endl;
-	}
 
 	
 	return 1;
