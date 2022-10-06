@@ -314,11 +314,11 @@ public:
 
 	Weapon* createWeapon(int lvl) {
 		int dmg = random(lvl * 2 + 1, lvl * 2 + 20);
-		return new Weapon(weaponNames[random(0, 5)], dmg, random(dmg, dmg + lvl));
+		return new Weapon(weaponNames[random(0, 5)], dmg, dmg + random(0, lvl / 3));
 	}
 	Armor* createArmor(int lvl) {
 		int def = random(lvl * 2 + 3, lvl * 2 + 20);
-		return new Armor(armorNames[random(0, 4)], def, random(def, def + lvl * 2));
+		return new Armor(armorNames[random(0, 4)], def, def + random(0, lvl / 3));
 	}
 
 };
@@ -464,7 +464,6 @@ int main() {
 
 	player = engine->createPlayer(name, category);
 
-	
 	return 1;
 }
 
