@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <ctime>
 #include <string>
+#include <typeinfo>
 #include <algorithm>
 #include <cmath>
 using namespace std;
@@ -212,18 +213,18 @@ public:
 
 	int generateDamage() {
 		int damage = weapon->getDamage() + strength;
-		int critChance = (agility + level)/3;
+		int critChance = (agility + level) / 3;
 
-		if (( rand() % agility)<=critChance) {
+		if ((rand() % agility) <= critChance) {
 			damage += agility;
 		}
 
-		return damage*2/3;
+		return damage * 2 / 3;
 	}
 
 	int generateDefence(int damage) {
-		
-		return damage - (endurance + armor->getDefence()) / 3;	
+
+		return damage - (endurance + armor->getDefence()) / 3;
 	}
 };
 
@@ -261,14 +262,11 @@ public:
 
 };
 
-
-
-
 class Engine {
 private:
-	string monsterNames[10] = { "Bogeyman","Vampire","Zombie", "Hydra","Chimera","Yeti","Dragon","Basilisk","Werewolf", "Gorgon" };
-	string armorNames[4] = { "Leather Armor", "Golden Armor","Bronze Armor","Black Armor" };
-	string weaponNames[5] = { "Sword", "Dagger", "Pike", "Axe", "Spear" };
+	vector <string> monsterNames = { "Bogeyman","Vampire","Zombie", "Hydra","Chimera","Yeti","Dragon","Basilisk","Werewolf", "Gorgon" };
+	vector <string> armorNames = { "Leather Armor", "Golden Armor","Bronze Armor","Black Armor" };
+	vector <string> weaponNames = { "Sword", "Dagger", "Pike", "Axe", "Spear" };
 
 	int random(int min, int max) {
 		return min + rand() % (max - min + 1);
@@ -309,37 +307,33 @@ public:
 		int exp = this->random(5, 40) + lvl * random(10, 25);
 		int money = this->random(2, 7) + lvl * random(3, 5);
 
-		return new Monster(this->monsterNames[random(0, 10)], hp, en, dmg, def, lvl, exp, money);
+		return new Monster(this->monsterNames[random(0, this->monsterNames.size())], hp, en, dmg, def, lvl, exp, money);
 	}
 
 	Weapon* createWeapon(int lvl) {
 		int dmg = random(lvl * 2 + 1, lvl * 2 + 20);
-		return new Weapon(weaponNames[random(0, 5)], dmg, dmg + random(0, lvl / 3));
+		return new Weapon(this->weaponNames[random(0, this->weaponNames.size())], dmg, dmg + random(0, lvl / 3));
 	}
 	Armor* createArmor(int lvl) {
 		int def = random(lvl * 2 + 3, lvl * 2 + 20);
-		return new Armor(armorNames[random(0, 4)], def, def + random(0, lvl / 3));
+		return new Armor(this->armorNames[random(0, this->armorNames.size())], def, def + random(0, lvl / 3));
 	}
 
 };
 
 class Event {
 private:
-	Engine* engine = new Engine();
-	Armor* armor = NULL;
-	Weapon* weapon = NULL;
-	Monster* monster = NULL;
+	Engine* engine = NULL;
 	Player* player = NULL;
 	vector <Armor*> armorShop;
 	vector <Weapon*> weaponShop;
-
 
 	void buyItem() {
 		int itemNumber;
 		cout << "What would you like to buy?(enter number)\n";
 		cin >> itemNumber;
 		if (itemNumber > armorShop.size()) {
-			weapon = weaponShop[itemNumber - armorShop.size() - 1];
+			Weapon* weapon = weaponShop[itemNumber - armorShop.size() - 1];
 			if (enoughMoney(weapon->getPrice())) {
 				player->setWeapon(weapon);
 				player->setCash(player->getCash() - weapon->getPrice());
@@ -350,7 +344,7 @@ private:
 			}
 		}
 		else if (itemNumber > 0) {
-			armor = armorShop[itemNumber - 1];
+			Armor* armor = armorShop[itemNumber - 1];
 			if (enoughMoney(armor->getPrice())) {
 				player->setArmor(armor);
 				player->setCash(player->getCash() - armor->getPrice());
@@ -372,22 +366,23 @@ private:
 		return false;
 	}
 public:
-	Event(Player* player) {
+	Event(Player* player, Engine* engine) {
 		this->player = player;
+		this->engine = engine;
 	}
-	void shop(int itemsCount) {
 
+	void shop(int itemsCount) {
+		this->armorShop.clear();
+		this->weaponShop.clear();
 		int armorCount = 1 + rand() % (itemsCount - 1);
 		int count = 0, itemNumber = 0;
 		while (count < armorCount) {
-			Armor* armor = this->engine->createArmor(this->player->getLevel());
-			armorShop.push_back(armor);
+			this->armorShop.push_back(this->engine->createArmor(this->player->getLevel()));
 			count++;
 		}
 		count = 0;
 		while (count < itemsCount - armorCount) {
-			Weapon* weapon = this->engine->createWeapon(this->player->getLevel());
-			weaponShop.push_back(weapon);
+			this->weaponShop.push_back(this->engine->createWeapon(this->player->getLevel()));
 			count++;
 		}
 		if (armorShop.size() != 0) {
@@ -447,6 +442,7 @@ int main() {
 	srand(time(NULL));
 	Engine* engine = new Engine();
 	Player* player = NULL;
+	Event* event = NULL;
 
 	string name = "";
 	int category = 0;
@@ -463,7 +459,7 @@ int main() {
 	}
 
 	player = engine->createPlayer(name, category);
+	event = new Event(player, engine);
 
 	return 1;
 }
-
