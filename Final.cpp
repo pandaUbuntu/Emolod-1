@@ -6,6 +6,8 @@
 #include <typeinfo>
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <conio.h>
 using namespace std;
 
 class Item {
@@ -188,6 +190,7 @@ public:
 
 	void regeneration(int regenerate) {
 		health += regenerate;
+		cout << "Regenerated " << regenerate << " HP.\n";
 		if (health > healthMax) {
 			health = healthMax;
 		}
@@ -209,6 +212,7 @@ public:
 		strength += rand() % 4;
 		endurance += rand() % 4;
 		agility += rand() % 4;
+		cout << "You level increased.("<<level<<")\n";
 	}
 
 	int generateDamage() {
@@ -239,16 +243,20 @@ public:
 		damage = dmg;
 		defence = def;
 		experience = exp;
+		this->money = money;
 	}
 
 	int getDamage() {
-		return this->damage;
+		return this->damage * 2 / 3;
 	}
 	int getDefence() {
 		return this->defence;
 	}
 	int getExperience() {
 		return this->experience;
+	}
+	int getMoney() {
+		return this->money;
 	}
 	void setDamage(int damage) {
 		this->damage = damage;
@@ -259,6 +267,10 @@ public:
 	void setExperience(int experience) {
 		this->experience = experience;
 	}
+	int generateDefence(int damage) {
+
+		return damage - (defence) / 3;
+	}
 
 };
 
@@ -268,10 +280,11 @@ private:
 	vector <string> armorNames = { "Leather Armor", "Golden Armor","Bronze Armor","Black Armor" };
 	vector <string> weaponNames = { "Sword", "Dagger", "Pike", "Axe", "Spear" };
 
+	
+public:
 	int random(int min, int max) {
 		return min + rand() % (max - min + 1);
 	}
-public:
 	Player* createPlayer(string name, int category) {
 
 		int str = random(4, 7), ag = random(4, 7), end = random(4, 7);
@@ -310,6 +323,29 @@ public:
 		return new Monster(this->monsterNames[random(0, this->monsterNames.size())], hp, en, dmg, def, lvl, exp, money);
 	}
 
+	void fight(Player* player, Monster* monster) {
+		cout << "You met a " << monster->getName() << endl;
+		do {
+			int playerDamage = monster->generateDefence(player->generateDamage());
+			cout << "You dealed monster " << playerDamage << ".\n";
+			monster->setHP(monster->getHP() - playerDamage);
+			int monsterDamage = player->generateDefence(monster->getDamage());
+			cout << "Monster dealed you " << monsterDamage << ".\n";
+			player->setHP(player->getHP() - monsterDamage);
+		} while (monster->getHP() > 0 && player->getHP() > 0);
+		if (player->getHP() <= 0) {
+			cout << "You lost\n";
+		}
+		else
+		{
+			cout << "You won\n"<<
+				"You get "<< monster->getExperience()<<"EXP and "<< monster->getMoney()<<"$.\n";
+			
+			player->giveExperience(monster->getExperience());
+			player->setCash(player->getCash() + monster->getMoney());
+		}
+	}
+
 	Weapon* createWeapon(int lvl) {
 		int dmg = random(lvl * 2 + 1, lvl * 2 + 20);
 		return new Weapon(this->weaponNames[random(0, this->weaponNames.size())], dmg, dmg + random(0, lvl / 3));
@@ -325,8 +361,8 @@ class Event {
 private:
 	Engine* engine = NULL;
 	Player* player = NULL;
-	vector <Armor*> armorShop;
-	vector <Weapon*> weaponShop;
+	vector <Armor*> armorShop = {};
+	vector <Weapon*> weaponShop = {};
 
 	void buyItem() {
 		int itemNumber;
@@ -375,15 +411,19 @@ public:
 		this->armorShop.clear();
 		this->weaponShop.clear();
 		int armorCount = 1 + rand() % (itemsCount - 1);
-		int count = 0, itemNumber = 0;
+		int itemNumber = 0;
+		int count = 0;
 		while (count < armorCount) {
-			this->armorShop.push_back(this->engine->createArmor(this->player->getLevel()));
+			Armor* armor = this->engine->createArmor(this->player->getLevel());
+			this->armorShop.push_back(armor);
 			count++;
 		}
 		count = 0;
 		while (count < itemsCount - armorCount) {
-			this->weaponShop.push_back(this->engine->createWeapon(this->player->getLevel()));
+			Weapon* weapon = engine->createWeapon(this->player->getLevel());
+			weaponShop.push_back(weapon);
 			count++;
+
 		}
 		if (armorShop.size() != 0) {
 			cout << "========Armor========\n";
@@ -401,7 +441,11 @@ public:
 				cout << endl;
 			}
 		}
-
+		cout << "Your cash: "<<player->getCash()<<"\nYour weapon: ";
+		player->getWeapon()->printInfo();
+		cout << "\nYour armor: ";
+		player->getArmor()->printInfo();
+		cout << endl;
 		cout << "Would you like to buy something?(yes or no)\n";
 		string answer = "";
 		cin >> answer;
@@ -413,6 +457,7 @@ public:
 	}
 	void meetMonster() {
 		Monster* monster = this->engine->createMonster(this->player->getLevel());
+		engine->fight(player, monster);
 	}
 
 	void hunting() {
@@ -435,31 +480,81 @@ public:
 
 };
 
+class SaveLoad {
+public:
+	Player* load() {
+		Player* player = NULL;
+		ifstream load;
+		load.open("playerBase.txt");
+		load.read((char*)&player, sizeof(Player));
+		load.close();
+		return player;
+	}
+	void save(Player* player) {
+		ofstream save;
+		save.open("playerBase.txt");
+		save << player;
+		save.close();
+	}
+};
+
 
 int main() {
 	SetConsoleCP(1251);
 	SetConsoleOutputCP(1251);
 	srand(time(NULL));
+	SaveLoad* saveLoad = new SaveLoad();
 	Engine* engine = new Engine();
 	Player* player = NULL;
 	Event* event = NULL;
+	//player=saveLoad->load();
+	if (player == NULL) {
+		string name = "";
+		int category = 0;
 
-	string name = "";
-	int category = 0;
+		cout << "Enter player name: ";
+		cin >> name;
 
-	cout << "Enter player name: ";
-	cin >> name;
+		cout << "Choose your class: 1-Barbarian, 2-Tank, 3-Rogue:" << endl;
+		cin >> category;
 
-	cout << "Choose your class: 1-Barbarian, 2-Tank, 3-Rogue:" << endl;
-	cin >> category;
+		if (category < 1 || category > 3) {
+			cout << "Error!";
+			return 0;
+		}
 
-	if (category < 1 || category > 3) {
-		cout << "Error!";
-		return 0;
+		player = engine->createPlayer(name, category);
+		
 	}
-
-	player = engine->createPlayer(name, category);
 	event = new Event(player, engine);
+
+	do {
+		int eventChance = rand() % 100;
+		if (eventChance < 5) {
+			//event->shop(engine->random(3,7));
+		}
+		else if (eventChance < 45) {
+			event->meetMonster();
+		}
+		else if (eventChance<70)
+		{
+			event->hunting();
+		}
+		else
+		{
+			cout << "...\n";
+		}
+
+
+		if (player->getHP() < 0) {
+			cout << "You died.";
+			saveLoad->save(NULL);
+			return 1;
+		}
+		player->regeneration(engine->random(player->getHP() / 5, player->getHP() /2));
+		cout << "Press ESC to stop game or press any other key to continue.\n";
+	} while (_getch()!=27);
+	saveLoad->save(player);
 
 	return 1;
 }
