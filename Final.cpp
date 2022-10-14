@@ -348,11 +348,11 @@ public:
 
 	Weapon* createWeapon(int lvl) {
 		int dmg = random(lvl * 2 + 1, lvl * 2 + 20);
-		return new Weapon(this->weaponNames[random(0, this->weaponNames.size())], dmg, dmg + random(0, lvl / 3));
+		return new Weapon(this->weaponNames[random(0, this->weaponNames.size() - 1)], dmg, dmg + random(0, lvl / 3));
 	}
 	Armor* createArmor(int lvl) {
 		int def = random(lvl * 2 + 3, lvl * 2 + 20);
-		return new Armor(this->armorNames[random(0, this->armorNames.size())], def, def + random(0, lvl / 3));
+		return new Armor(this->armorNames[random(0, this->armorNames.size() - 1)], def, def + random(0, lvl / 3));
 	}
 
 };
